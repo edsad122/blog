@@ -1,0 +1,756 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
+  <link rel="icon" href="/blog/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Edasd">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="设计功能描述使用Java编写的将MiniSys汇编程序转换到 Minisys 体系机器码的汇编器，同时兼具链接功能。   模块功能 main.java：程序入口，实现命令行，-l表示是否与bios，中断程序链接。例： $ java -jar minisys-java.jar   -l Assembler.java：实现对数据段、指令段的汇编，先对指令进行宏展开，将指令与label分离并储存labe">
+<meta property="og:type" content="article">
+<meta property="og:title" content="用Java实现汇编器+链接器">
+<meta property="og:url" content="https://edsad122.github.io/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/index.html">
+<meta property="og:site_name" content="Edasd">
+<meta property="og:description" content="设计功能描述使用Java编写的将MiniSys汇编程序转换到 Minisys 体系机器码的汇编器，同时兼具链接功能。   模块功能 main.java：程序入口，实现命令行，-l表示是否与bios，中断程序链接。例： $ java -jar minisys-java.jar   -l Assembler.java：实现对数据段、指令段的汇编，先对指令进行宏展开，将指令与label分离并储存labe">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://edsad122.github.io/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/out.png">
+<meta property="og:image" content="https://edsad122.github.io/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/asm.png">
+<meta property="og:image" content="https://edsad122.github.io/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/Ins.png">
+<meta property="article:published_time" content="2024-01-11T08:17:58.000Z">
+<meta property="article:modified_time" content="2024-01-11T15:12:13.789Z">
+<meta property="article:author" content="Edasd">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://edsad122.github.io/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/out.png">
+  
+  
+  
+  <title>用Java实现汇编器+链接器 - Edasd</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"edsad122.github.io","root":"/blog/","version":"1.9.7","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.0.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/blog/">
+      <strong>Edasd</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="用Java实现汇编器+链接器"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-01-11 16:17" pubdate>
+          2024年1月11日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          44 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">用Java实现汇编器+链接器</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="设计功能描述"><a href="#设计功能描述" class="headerlink" title="设计功能描述"></a>设计功能描述</h1><p>使用Java编写的将MiniSys汇编程序转换到 Minisys 体系机器码的汇编器，同时兼具链接功能。</p>
+<img src="/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/out.png" srcset="/blog/img/loading.gif" lazyload class="" title="图文无关，累了跑跑图🤓">
+
+<h2 id="模块功能"><a href="#模块功能" class="headerlink" title="模块功能"></a>模块功能</h2><ul>
+<li>main.java：程序入口，实现命令行，-l表示是否与bios，中断程序链接。例： <em>$ java -jar minisys-java.jar <in_file> <out_dir> -l</em></li>
+<li>Assembler.java：实现对数据段、指令段的汇编，先对指令进行宏展开，将指令与label分离并储存label以及其对应的地址，遍历所有指令进行汇编，最后输出AsmProgram（包含了处理后的数据段、指令段数据）。</li>
+<li>MiniInstructions.java：实现57条指令，保存其相应的正则格式，调用toBinary方法即可实现指令转二进制。</li>
+<li>Converter.java：将输入的AsmProgram转为相应的Coe文件，也实现了将数据段、指令段的Coe文件合并生成可以直接在开放板上运行的serial。</li>
+<li>Linker.java：根据MiniSys的MEM布局（BIOS 区域、用户程序区域、中断处理程序入口、中断处理程序）对二进制数据实现内存的布局、地址的重定位。</li>
+<li>MacroExpansionRules：实现宏指令，可以将push、pop、jg、jge、jl、jle、move宏指令转为常用指令。</li>
+<li>Instruction.java：实现了指令类的底层逻辑，为了实现对57条指令的兼容，包含了自定义正则、指令componentList自定义、toBinary自定义（每种指令的构成、正则格式都是不同的，这样实现简单易用）。</li>
+<li>Register.java：实现了寄存器的转换，可以对32个通用寄存器进行映射。</li>
+<li>Utils：通用工具类，实现了label转二进制（Assember里已经保存了label的数据），变量转二进制以及各种通用的十六转二进制，十进制转二进制，计算偏移地址，获取数据类型大小等工具。</li>
+</ul>
+<h1 id="设计的主要特色"><a href="#设计的主要特色" class="headerlink" title="设计的主要特色"></a>设计的主要特色</h1><h2 id="宏指令支持"><a href="#宏指令支持" class="headerlink" title="宏指令支持"></a>宏指令支持</h2><p>通过对宏指令转换为MiniSys支持的57条常用指令，实现对push、pop、jg、jge、jl、jle、move宏指令的支持。</p>
+<h2 id="内存的布局、地址的重定位"><a href="#内存的布局、地址的重定位" class="headerlink" title="内存的布局、地址的重定位"></a>内存的布局、地址的重定位</h2><p>链接器根据MiniSys的MEM布局（BIOS 区域、用户程序区域、中断处理程序入口、中断处理程序）对二进制数据实现内存的布局、地址的重定位，并生成可以直接在开放板上使用的serial文件。</p>
+<h2 id="易用性"><a href="#易用性" class="headerlink" title="易用性"></a>易用性</h2><p>在Instruction类实现中，由于正则、componentList、toBinary都可以自定义。因此，仅需在MinisysInstructions类中加入新指令对应的正则、指令格式、二进制转译规则，即可实现对新指令的支持。</p>
+<h1 id="体系结构"><a href="#体系结构" class="headerlink" title="体系结构"></a>体系结构</h1><img src="/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/asm.png" srcset="/blog/img/loading.gif" lazyload class="" title="MiniAsm项目框架">
+
+<p>汇编器的结构如图所示：Assembler接收一个包含汇编代码的文件（.asm格式）。首先，进行宏指令扩展，并在此过程中处理标签（label），将处理后的结果存储在TextSegLabel中。随后，逐行处理指令，并将处理后的信息整合到AsmProgram中。AsmProgram包括数据段（DataSeg）和指令段（TextSeg）。数据段保存了所有变量的名称、类型以及相应的值，而指令段保存了所有指令的详细信息。</p>
+<h1 id="设计与特色概述"><a href="#设计与特色概述" class="headerlink" title="设计与特色概述"></a>设计与特色概述</h1><h2 id="指令类的底层逻辑：Instruction-java"><a href="#指令类的底层逻辑：Instruction-java" class="headerlink" title="指令类的底层逻辑：Instruction.java"></a>指令类的底层逻辑：Instruction.java</h2><img src="/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/Ins.png" srcset="/blog/img/loading.gif" lazyload class="" title="指令格式">
+
+<p>该类涵盖了当前指令的各个方面，包括指令类型、描述、指令名称、指令正则模式，以及构成列表（List&lt;InstructionComponent&gt;）。在这个上下文中，InstructionComponent用于定义指令的构成。具体而言，MIPS指令在图示中规定了其格式和含义，而InstructionComponent则指明了从lBit到rBit位置的二进制数据的类型type。toBinary方法定义了如何生成二进制val值，若不需要生成，则为null。每个指令包含多个InstructionComponent，如图中所示，其中第一个和最后一个是固定的，而中间的三个通过toBinary方法生成相应的二进制val值。举例来说，通过正则表达式解析输入的字符串，然后提取值并将其转换为二进制，最后填入相应的位置。这种设计能够有效地实现指令的解析和二进制表示，使其在汇编器中发挥作用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> String <span class="hljs-title function_">toBinary</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">for</span> (InstructionComponent component : components) &#123;<br>        <span class="hljs-keyword">if</span> (component.getVal().trim().isEmpty()) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;尝试将不完整的指令转为2或16进制。&quot;</span>);<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> components.stream().map(InstructionComponent::getVal).reduce(String::concat).orElse(<span class="hljs-string">&quot;&quot;</span>);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在这个类中，实现了toBinary方法，其主要功能是提取之前InstructionComponent中存储的已转换为二进制的val值，并将它们合并成一个二进制流。值得注意的是，此处的toBinary方法与前文中Component中的toBinary方法并不相同。这里的toBinary方法专注于将Component中通过toBinary生成的二进制值（如果toBinary为null，则直接使用val）整合成一个二进制流。</p>
+<h2 id="通用指令的实现：MiniInstructions-java"><a href="#通用指令的实现：MiniInstructions-java" class="headerlink" title="通用指令的实现：MiniInstructions.java"></a>通用指令的实现：MiniInstructions.java</h2><p>该类为Instruction的上层类，构建了57条MIPS通用指令。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java">newInstruction(<span class="hljs-string">&quot;add&quot;</span>, <span class="hljs-string">&quot;按字加法&quot;</span>, <span class="hljs-string">&quot;(rd)←(rs)+(rt)&quot;</span>, paramPattern(<span class="hljs-number">3</span>), <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>[]&#123;<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">31</span>, <span class="hljs-number">26</span>, <span class="hljs-string">&quot;op&quot;</span>, <span class="hljs-literal">null</span>, InstructionComponentType.FIXED, <span class="hljs-string">&quot;000000&quot;</span>),<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">25</span>, <span class="hljs-number">21</span>, <span class="hljs-string">&quot;rs&quot;</span>, m -&gt; Register.regToBin(m.group(<span class="hljs-number">2</span>)), InstructionComponentType.REG, <span class="hljs-string">&quot;&quot;</span>),<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">20</span>, <span class="hljs-number">16</span>, <span class="hljs-string">&quot;rt&quot;</span>, m -&gt; Register.regToBin(m.group(<span class="hljs-number">3</span>)), InstructionComponentType.REG, <span class="hljs-string">&quot;&quot;</span>),<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">15</span>, <span class="hljs-number">11</span>, <span class="hljs-string">&quot;rd&quot;</span>, m -&gt; Register.regToBin(m.group(<span class="hljs-number">1</span>)), InstructionComponentType.REG, <span class="hljs-string">&quot;&quot;</span>),<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">10</span>, <span class="hljs-number">6</span>, <span class="hljs-string">&quot;shamt&quot;</span>, <span class="hljs-literal">null</span>, InstructionComponentType.FIXED, <span class="hljs-string">&quot;00000&quot;</span>),<br>        <span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">5</span>, <span class="hljs-number">0</span>, <span class="hljs-string">&quot;func&quot;</span>, <span class="hljs-literal">null</span>, InstructionComponentType.FIXED, <span class="hljs-string">&quot;100000&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<p>根据上图所示，通过newInstruction方法构建新指令。此方法接受指令名称、指令描述、指令正则和指令构成列表等参数，其中指令构成列表的格式按照MIPS指令的规范输入。这使得我们能够轻松地构建新的指令。值得注意的是，toBinary方法，在已经输入了val或者type为FIXED的情况下会为null。而在其他情况下，它定义了如何处理指令正则匹配后的字符串。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">31</span>, <span class="hljs-number">26</span>, <span class="hljs-string">&quot;op&quot;</span>, <span class="hljs-literal">null</span>, InstructionComponentType.FIXED, <span class="hljs-string">&quot;100100&quot;</span>),<br><span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">25</span>, <span class="hljs-number">21</span>, <span class="hljs-string">&quot;rs&quot;</span>, m -&gt; Register.regToBin(m.group(<span class="hljs-number">3</span>)), InstructionComponentType.REG, <span class="hljs-string">&quot;&quot;</span>),<br><span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">20</span>, <span class="hljs-number">16</span>, <span class="hljs-string">&quot;rt&quot;</span>, m -&gt; Register.regToBin(m.group(<span class="hljs-number">1</span>)), InstructionComponentType.REG, <span class="hljs-string">&quot;&quot;</span>),<br><span class="hljs-keyword">new</span> <span class="hljs-title class_">InstructionComponent</span>(<span class="hljs-number">15</span>, <span class="hljs-number">0</span>, <span class="hljs-string">&quot;offset&quot;</span>, m -&gt; Utils.varToAddrBin(m.group(<span class="hljs-number">2</span>), <span class="hljs-number">16</span>, <span class="hljs-literal">true</span>), InstructionComponentType.OFFSET, <span class="hljs-string">&quot;&quot;</span>)<br></code></pre></td></tr></table></figure>
+
+<p>例如，在处理add指令时，正则匹配后的参数为寄存器，因此，我们需要对matcher m的group进行regToBin的操作。如果是匹配后是offset的参数，则需要varToAddrBin或labelToBin，immediate则为literalToBin。同理，可以得到其他56条指令。</p>
+<h2 id="Register-java：寄存器的实现"><a href="#Register-java：寄存器的实现" class="headerlink" title="Register.java：寄存器的实现"></a>Register.java：寄存器的实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">regToBin</span><span class="hljs-params">(String reg)</span> &#123;<br>        reg = reg.replace(<span class="hljs-string">&quot;$&quot;</span>, <span class="hljs-string">&quot;&quot;</span>).trim();<br>        <span class="hljs-type">int</span> regNumber;<br>        <span class="hljs-keyword">if</span> (reg.matches(<span class="hljs-string">&quot;\\d+&quot;</span>)) &#123;<br>            regNumber = Integer.parseInt(reg);<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            regNumber = indexOfRegister(reg);<br>        &#125;<br>        <span class="hljs-keyword">return</span> Utils.decToBin(regNumber, <span class="hljs-number">5</span>,<span class="hljs-literal">false</span>);<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>实现寄存器功能并不复杂。通过接收输入的寄存器名称（reg），我们可以轻松找到相应的寄存器索引（Index），然后通过decToBin方法将其转换为二进制表示，最终进行输出。</p>
+<h2 id="MacroExpansionRules-java：宏指令的实现"><a href="#MacroExpansionRules-java：宏指令的实现" class="headerlink" title="MacroExpansionRules.java：宏指令的实现"></a>MacroExpansionRules.java：宏指令的实现</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java">expansionRules.put(<span class="hljs-string">&quot;push&quot;</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">MacroExpansionRule</span>(<span class="hljs-string">&quot;^push\\s+(\\$\\w&#123;1,2&#125;)$&quot;</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>[]&#123;<span class="hljs-string">&quot;addi $sp, $sp, -4&quot;</span>, <span class="hljs-string">&quot;sw $&#123;RegExp.$1&#125;, 0($sp)&quot;</span>&#125;));<br>expansionRules.put(<span class="hljs-string">&quot;pop&quot;</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">MacroExpansionRule</span>(<span class="hljs-string">&quot;^pop\\s+(\\$\\w&#123;1,2&#125;)$&quot;</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>[]&#123;<span class="hljs-string">&quot;lw $&#123;RegExp.$1&#125;, 0($sp)&quot;</span>, <span class="hljs-string">&quot;addi $sp, $sp, 4&quot;</span>&#125;));<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">replaceGroups</span><span class="hljs-params">(Matcher matcher, String input)</span> &#123;<br>            <span class="hljs-comment">// Check for presence of $&#123;RegExp.$3&#125;, $&#123;RegExp.$2&#125;, $&#123;RegExp.$1&#125; before replacing</span><br>            <span class="hljs-keyword">if</span> (input.contains(<span class="hljs-string">&quot;$&#123;RegExp.$3&#125;&quot;</span>)) &#123;<br>                input = input.replace(<span class="hljs-string">&quot;$&#123;RegExp.$3&#125;&quot;</span>, getGroup(matcher, <span class="hljs-number">3</span>));<br>            &#125;<br>            <span class="hljs-keyword">if</span> (input.contains(<span class="hljs-string">&quot;$&#123;RegExp.$2&#125;&quot;</span>)) &#123;<br>                input = input.replace(<span class="hljs-string">&quot;$&#123;RegExp.$2&#125;&quot;</span>, getGroup(matcher, <span class="hljs-number">2</span>));<br>            &#125;<br>            <span class="hljs-keyword">if</span> (input.contains(<span class="hljs-string">&quot;$&#123;RegExp.$1&#125;&quot;</span>)) &#123;<br>                input = input.replace(<span class="hljs-string">&quot;$&#123;RegExp.$1&#125;&quot;</span>, getGroup(matcher, <span class="hljs-number">1</span>));<br>            &#125;<br>            <span class="hljs-keyword">return</span> input;<br>        &#125;<br></code></pre></td></tr></table></figure>
+
+<p>宏指令的展开过程首先涉及对相关指令的参数获取。在获取到这些参数之后，通过对这些参数的合成操作，生成新的指令序列，这些指令即为通用的MIPS指令。最终，将这一新生成的指令序列返回，这相当于将原始宏指令在语义上替换为相应的MIPS通用指令。</p>
+<h2 id="Assembler-java：汇编功能的主要模块"><a href="#Assembler-java：汇编功能的主要模块" class="headerlink" title="Assembler.java：汇编功能的主要模块"></a>Assembler.java：汇编功能的主要模块</h2><p>该模块主要涉及两个关键方面的处理，即数据段和指令段，这两者在该模块中进行详细处理。</p>
+<h2 id="数据段"><a href="#数据段" class="headerlink" title="数据段"></a>数据段</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">String</span> <span class="hljs-variable">startAddr</span> <span class="hljs-operator">=</span> asm.get(<span class="hljs-number">0</span>).split(<span class="hljs-string">&quot;\\s+&quot;</span>).length != <span class="hljs-number">1</span> ? asm.get(<span class="hljs-number">0</span>).split(<span class="hljs-string">&quot;\\s+&quot;</span>)[<span class="hljs-number">1</span>] : <span class="hljs-string">&quot;0&quot;</span>;<br><span class="hljs-keyword">if</span> (asm.get(<span class="hljs-number">0</span>).split(<span class="hljs-string">&quot;\\s+&quot;</span>).length &gt; <span class="hljs-number">2</span>) &#123;<br>    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">RuntimeException</span>(<span class="hljs-string">&quot;数据段首声明非法&quot;</span>);<br>&#125;<br><span class="hljs-comment">//初始化</span><br>List&lt;DataSegVarComp&gt; comps = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();<br>vars = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();<br><span class="hljs-type">String</span> <span class="hljs-variable">name</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;<br><span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">1</span>;<br><span class="hljs-type">int</span> addr;<br><span class="hljs-keyword">if</span>(startAddr.startsWith(<span class="hljs-string">&quot;0x&quot;</span>))&#123;<br>    addr=Integer.parseInt(startAddr.substring(<span class="hljs-number">2</span>),<span class="hljs-number">16</span>);<br>&#125;<span class="hljs-keyword">else</span>&#123;<br>    addr=Integer.parseInt(startAddr);<br>&#125;<br><span class="hljs-type">AtomicInteger</span> <span class="hljs-variable">nextAddr</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">AtomicInteger</span>(addr);<br></code></pre></td></tr></table></figure>
+
+<p>首先，我们考虑数据段。数据段的处理分为三个状态：初始化、新增变量、变量中继。在初始化状态中，首先判断文件的第一行是否包含.data，然后获取起始地址startAddr和下一个地址nextAddr。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">Matcher</span> <span class="hljs-variable">varStartMatcher</span> <span class="hljs-operator">=</span> VAR_START_PATTERN.matcher(asm.get(i));<br><span class="hljs-type">Matcher</span> <span class="hljs-variable">varContdMatcher</span> <span class="hljs-operator">=</span> VAR_CONTD_PATTERN.matcher(asm.get(i));<br></code></pre></td></tr></table></figure>
+
+<p>如上图所示，通过正则表达式判断当前状态是新增变量还是变量中继状态。在新增变量状态中，即处理最初的变量声明，将上一次获取的信息存入变量集合vars中（如果上一次没有信息，则跳过）。然后，创建一个DataSegVar对象，将正则匹配得到的参数填入name和type字段，而最后一个参数value由于asm文件中可能使用逗号分隔多个变量，需要使用parseInitValue方法来处理。parseInitValue方法能够解析并存储数据到DataSegVar中。下图即为parseInitValue的调用，输入type和Matcher的最后一个参数，获得到的数据将其存入DataSegVar中。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java">parseInitValue(type, varStartMatcher.group(<span class="hljs-number">3</span>)).forEach(val -&gt; &#123;<br>    finalComps.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">DataSegVarComp</span>(type, val.trim()));<br>    nextAddr.addAndGet(size * (Objects.equals(type, <span class="hljs-string">&quot;ascii&quot;</span>) ? val.length() : <span class="hljs-number">1</span>));<br>&#125;);<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> List&lt;String&gt; <span class="hljs-title function_">parseInitValue</span><span class="hljs-params">(String type, String init)</span> &#123;<br>        <span class="hljs-keyword">assert</span> !(!Objects.equals(type, <span class="hljs-string">&quot;ascii&quot;</span>) &amp;&amp; init.contains(<span class="hljs-string">&quot;\&quot;&quot;</span>)) : <span class="hljs-string">&quot;字符串型数据只能使用.ascii类型&quot;</span>;<br>        init = init.trim();<br>        <span class="hljs-keyword">assert</span> init.charAt(<span class="hljs-number">0</span>) != <span class="hljs-string">&#x27;,&#x27;</span> &amp;&amp; init.charAt(init.length() - <span class="hljs-number">1</span>) != <span class="hljs-string">&#x27;,&#x27;</span> : <span class="hljs-string">&quot;数据初始化值头或尾有非法逗号&quot;</span>;<br><br>        <span class="hljs-keyword">if</span> (!Objects.equals(type, <span class="hljs-string">&quot;ascii&quot;</span>)) &#123;<br>            <span class="hljs-keyword">return</span> Stream.of(init.split(<span class="hljs-string">&quot;\\s*,&quot;</span>)).toList();<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-type">boolean</span> <span class="hljs-variable">inQuote</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;<br>            <span class="hljs-type">boolean</span> <span class="hljs-variable">nextEscape</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;<br>            List&lt;String&gt; res = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();<br>            <span class="hljs-type">StringBuilder</span> <span class="hljs-variable">buf</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuilder</span>();<br>            <span class="hljs-type">char</span> <span class="hljs-variable">prev</span> <span class="hljs-operator">=</span> <span class="hljs-string">&#x27;\0&#x27;</span>;<br><br>            <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; init.length(); i++) &#123;<br>                <span class="hljs-type">char</span> <span class="hljs-variable">ch</span> <span class="hljs-operator">=</span> init.charAt(i);<br>                <span class="hljs-keyword">if</span> (!inQuote &amp;&amp; Character.isWhitespace(ch)) &#123;<br>                    <span class="hljs-keyword">continue</span>;<br>                &#125;<br>                <span class="hljs-keyword">if</span> (ch == <span class="hljs-string">&#x27;&quot;&#x27;</span>) &#123;<br>                    <span class="hljs-keyword">if</span> (nextEscape) &#123;<br>                        <span class="hljs-keyword">assert</span> inQuote : <span class="hljs-string">&quot;有非法字符出现在引号以外&quot;</span>;<br>                        buf.append(<span class="hljs-string">&#x27;&quot;&#x27;</span>);<br>                        nextEscape = <span class="hljs-literal">false</span>;<br>                    &#125; <span class="hljs-keyword">else</span> &#123;<br>                        inQuote = !inQuote;<br>                    &#125;<br>                &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (ch == <span class="hljs-string">&#x27;\\&#x27;</span>) &#123;<br>                    <span class="hljs-keyword">assert</span> inQuote : <span class="hljs-string">&quot;有非法字符出现在引号以外&quot;</span>;<br>                    <span class="hljs-keyword">if</span> (nextEscape) &#123;<br>                        buf.append(<span class="hljs-string">&#x27;\\&#x27;</span>);<br>                        nextEscape = <span class="hljs-literal">false</span>;<br>                    &#125; <span class="hljs-keyword">else</span> &#123;<br>                        nextEscape = <span class="hljs-literal">true</span>;<br>                    &#125;<br>                &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (ch == <span class="hljs-string">&#x27;,&#x27;</span>) &#123;<br>                    <span class="hljs-keyword">if</span> (inQuote) &#123;<br>                        buf.append(<span class="hljs-string">&#x27;,&#x27;</span>); <span class="hljs-comment">// 引号内逗号可不escape</span><br>                        nextEscape = <span class="hljs-literal">false</span>;<br>                    &#125; <span class="hljs-keyword">else</span> &#123;<br>                        <span class="hljs-keyword">assert</span> prev != <span class="hljs-string">&#x27;,&#x27;</span> : <span class="hljs-string">&quot;数据初始化值存在连续的逗号分隔&quot;</span>;<br>                        res.add(buf.toString());<br>                        buf = <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuilder</span>();<br>                    &#125;<br>                &#125; <span class="hljs-keyword">else</span> &#123;<br>                    <span class="hljs-keyword">assert</span> inQuote : <span class="hljs-string">&quot;有非法字符出现在引号以外&quot;</span>;<br>                    <span class="hljs-keyword">if</span> (nextEscape) &#123;<br>                        buf.append(StringProcessor.unraw(ch));<br>                    &#125; <span class="hljs-keyword">else</span> &#123;<br>                        buf.append(ch);<br>                    &#125;<br>                    nextEscape = <span class="hljs-literal">false</span>;<br>                &#125;<br>                prev = ch;<br>            &#125;<br>            res.add(buf.toString());<br>            <span class="hljs-keyword">return</span> res;<br>        &#125;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>以上为parseInitValue的具体实现，此函数接受两个参数：“type”和“init”，type是变量类型，init是变量的初始值。 “parseInitValue”函数首先声明，如果变量类型不是“ascii”，则初始值不应包含双引号字符。判断初始值是否以逗号开头或结尾。 如果变量类型不是“ascii”，则函数会用逗号分隔初始值，并返回一个修剪后的值数组。 如果变量类型为“ascii”，则函数将进入更复杂的解析过程。 它初始化几个变量以跟踪解析状态，包括它当前是否在带引号的字符串（“inQuote”）内，是否应转义下一个字符（“nextEscape”）、结果数组（“res”）、当前字符串的缓冲区（“buf”）和前一个字符的缓冲区。 然后，函数在初始值中的每个字符上进入一个循环。根据当前字符和解析状态，它会更新状态变量并将字符添加到缓冲区或结果数组中。 该函数使用“assert”函数来确保初始值的语法正确，如果遇到非法字符或序列，则会引发错误。</p>
+<p>举例说明：如果输入的是<code> a: .ascii &quot;hello&quot;,&quot;world&quot;</code> 则name为a，type为ascii，第3个参数会交给parseInitValue处理成包含”hello”、”world”的List。</p>
+<p>变量中继状态处理除了不会新建一个DataSegVar与变量开始状态基本一致。</p>
+<h2 id="指令段"><a href="#指令段" class="headerlink" title="指令段"></a>指令段</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> List&lt;String&gt; <span class="hljs-title function_">expandMacros</span><span class="hljs-params">(List&lt;String&gt; asm, List&lt;Integer&gt; lineno)</span> &#123;<br>        List&lt;String&gt; expandedAsm = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(asm);<br>        String[] macros = MacroExpansionRules.expansionRules.keySet().toArray(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>[<span class="hljs-number">0</span>]);<br>        <span class="hljs-type">int</span> <span class="hljs-variable">bias</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;<br><br>        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; asm.size(); i++) &#123;<br>            <span class="hljs-type">String</span> <span class="hljs-variable">v</span> <span class="hljs-operator">=</span> asm.get(i);<br>            <span class="hljs-type">String</span> <span class="hljs-variable">labelPreserve</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;&quot;</span>;<br>            <span class="hljs-type">Pattern</span> <span class="hljs-variable">labelPattern</span> <span class="hljs-operator">=</span> Pattern.compile(<span class="hljs-string">&quot;^(\\w+:)\\s*([\\w\\s$]+)$&quot;</span>);<br>            <span class="hljs-type">Matcher</span> <span class="hljs-variable">lableMatcher</span> <span class="hljs-operator">=</span> labelPattern.matcher(v);<br>            <span class="hljs-keyword">if</span> (lableMatcher.matches()) &#123;<br>                labelPreserve = lableMatcher.group(<span class="hljs-number">1</span>);<br>                v = lableMatcher.group(<span class="hljs-number">2</span>).trim();<br>            &#125;<br>            <span class="hljs-keyword">for</span> (String macro : macros) &#123;<br>                <span class="hljs-type">Pattern</span> <span class="hljs-variable">pattern</span> <span class="hljs-operator">=</span> MacroExpansionRules.expansionRules.get(macro).pattern;<br>                <span class="hljs-type">Matcher</span> <span class="hljs-variable">m</span> <span class="hljs-operator">=</span> pattern.matcher(v);<br>                <span class="hljs-keyword">if</span> (m.matches()) &#123;<br>                    String[] replacer = MacroExpansionRules.expansionRules.get(macro).replace(m);<br>                    replacer[<span class="hljs-number">0</span>] = labelPreserve + <span class="hljs-string">&quot; &quot;</span> + replacer[<span class="hljs-number">0</span>];<br>                    expandedAsm.remove(i + bias);<br>                    expandedAsm.addAll(i + bias, Arrays.asList(replacer));<br><br>                    lineno.remove(i + bias);<br>                    lineno.addAll(i + bias, <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;(Collections.nCopies(replacer.length, lineno.get(i + bias))));<br>                    bias += replacer.length - <span class="hljs-number">1</span>;<br>                    <span class="hljs-keyword">break</span>;<br>                &#125;<br>            &#125;<br>        &#125;<br><br>        <span class="hljs-keyword">return</span> expandedAsm;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>在开始指令段的处理之前需要对其进行宏指令扩展，如上图所示，<code>expandMacros</code>函数用于在汇编语言源代码中扩展宏。该函数接收两个参数：<code>asm</code>（汇编语言指令的数组）和<code>lineno</code>（对应于指令的行号数组）。</p>
+<p>函数开始时，创建了<code>asm</code>数组的副本，并初始化了几个变量，包括<code>macros</code>（从<code>expansionRules</code>对象中获取的键的数组），以及<code>bias</code>（用于跟踪由于替换指令为扩展宏而引起的偏移）。</p>
+<p>然后，函数遍历<code>asm</code>数组中的每个指令。对于每个指令，它检查是否匹配<code>LabelPattern</code>正则表达式。如果匹配，它会保留标签部分并修剪指令的其余部分。</p>
+<p>接下来，函数检查指令是否匹配<code>expansionRules</code>对象中任何宏的模式。如果匹配，它获取匹配宏的替换器，将保留的标签添加到替换器中的第一条指令前，然后在<code>asm</code>数组中用扩展宏替换原始指令。它还更新<code>lineno</code>数组以反映宏扩展后的新行号，并更新<code>bias</code>以考虑数组长度的变化。</p>
+<p>最后，函数返回所有宏都已扩展的<code>asm</code>数组。前面宏指令已经介绍过，这里调用replace函数，并传入正则匹配后的参数即可返回替换的指令。再将这些处理后的指令插入到原指令中并更新lineno。</p>
+<p>处理宏指令后正式加入指令段处理，和数据段的处理相同，先判断是否存在格式问题，再初始化开始地址startAddr和下一个地址nextAddr。与之不同的是，需要对label进行预处理：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">if</span> (labelMatcher.matches()) &#123;<br>    labels.add(<span class="hljs-keyword">new</span> <span class="hljs-title class_">TextSegLabel</span>(labelMatcher.group(<span class="hljs-number">1</span>), insLineno, Utils.getOffsetAddr(startAddr, (insLineno - <span class="hljs-number">1</span>) * Utils.sizeof(<span class="hljs-string">&quot;ins&quot;</span>))));<br>    <span class="hljs-keyword">if</span> (!labelMatcher.group(<span class="hljs-number">2</span>).trim().isEmpty()) &#123;<br>          insLineno++;<br>    &#125;<br>    instructions.add(labelMatcher.group(<span class="hljs-number">2</span>));<br>&#125; <span class="hljs-keyword">else</span> &#123;<br>    insLineno++;<br>    instructions.add(v);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>遍历所有的指令，对于符合label正则的，将<code>label的地址、label的行数、label的名字</code>存入labels变量中。在进行这几部预处理后，指令段进入逐行转译阶段，逐行阶段由parseOneLine方法处理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> Instruction <span class="hljs-title function_">parseOneLine</span><span class="hljs-params">(String asm, <span class="hljs-type">int</span> lineno)</span> &#123;<br>        <span class="hljs-comment">// 处理助记符</span><br>        <span class="hljs-type">Pattern</span> <span class="hljs-variable">pattern</span> <span class="hljs-operator">=</span> Pattern.compile(<span class="hljs-string">&quot;^\\s*(\\w+)\\s*(.*)&quot;</span>);<br>        <span class="hljs-type">Matcher</span> <span class="hljs-variable">matcher</span> <span class="hljs-operator">=</span> pattern.matcher(asm);<br>        <span class="hljs-keyword">if</span> (!matcher.matches()) &#123;<br>            System.out.print(<span class="hljs-string">&quot;\&quot;没有找到指令助记符，在代码第 &quot;</span> + lineno);<br>        &#125;<br>        <span class="hljs-type">String</span> <span class="hljs-variable">symbol</span> <span class="hljs-operator">=</span> matcher.group(<span class="hljs-number">1</span>);<br>        <span class="hljs-comment">// 检验助记符合法性</span><br>        <span class="hljs-type">int</span> <span class="hljs-variable">instructionIndex</span> <span class="hljs-operator">=</span> -<span class="hljs-number">1</span>;<br>        <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; minisysInstructions.size(); i++) &#123;<br>            <span class="hljs-keyword">if</span> (minisysInstructions.get(i).getSymbol().equals(symbol)) &#123;<br>                instructionIndex = i;<br>                <span class="hljs-keyword">break</span>;<br>            &#125;<br>        &#125;<br>        <span class="hljs-comment">// 单行汇编去空格</span><br>        asm = Utils.serialString(matcher.group(<span class="hljs-number">2</span>));<br>        <span class="hljs-comment">// pc移进</span><br>        pc += Utils.sizeof(<span class="hljs-string">&quot;ins&quot;</span>);<br>        <span class="hljs-comment">// 开始组装Instruction对象</span><br>        <span class="hljs-type">Instruction</span> <span class="hljs-variable">res</span> <span class="hljs-operator">=</span> Instruction.newInstance(minisysInstructions.get(instructionIndex));<br>        res.setSrc(symbol+<span class="hljs-string">&quot; &quot;</span>+asm);<br>        <span class="hljs-keyword">for</span> (InstructionComponent component : res.getComponents()) &#123;<br>            <span class="hljs-keyword">if</span> (component.getVal().trim().isEmpty()) &#123;<br>                res.setComponent(component.getDesc(), component.toBinary(res.getInsPattern().matcher(asm)));<br>            &#125;<br>        &#125;<br><br>        <span class="hljs-keyword">return</span> res;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>如上图所示，即为parseOneLine的具体实现，函数首先使用正则表达式从<code>asm</code>字符串中提取助记符（指令的符号名称）。接下来，函数通过在<code>MinisysInstructions</code>数组中查找其索引来检查助记符的有效性。</p>
+<p>然后，函数使用<code>serialString</code>函数从<code>asm</code>字符串中删除所有空格，并将程序计数器（<code>pc</code>）增加一个指令的大小。</p>
+<p>接着，函数开始组装<code>Instruction</code>对象。它根据在<code>MinisysInstructions</code>数组中找到的指令创建<code>Instruction</code>类的新实例。函数然后遍历指令的每个组件。对于每个不是指令二进制中的<code>FIXED</code>的组件（即需要填充的变量），使用<code>setComponent</code>方法将组件从<code>toBinary</code>中获得的值设置为其二进制表示。</p>
+<p>最后，函数返回组装的<code>Instruction</code>对象。需要注意的是该语句，也是Instruction的核心。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java">component.toBinary(res.getInsPattern().matcher(asm))<br></code></pre></td></tr></table></figure>
+
+<p>该语句中的toBinary即为上面InstructionComponent中提到的toBinary方法，其功能是生成二进制表示。具体实现如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> String <span class="hljs-title function_">toBinary</span><span class="hljs-params">(Matcher m)</span> &#123;<br>        <span class="hljs-keyword">if</span>(toBinary != <span class="hljs-literal">null</span> &amp;&amp; m.matches())<br>            <span class="hljs-keyword">return</span> toBinary.apply(m);<br>        <span class="hljs-keyword">else</span><br>            <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;&quot;</span>;<br>    &#125;<br></code></pre></td></tr></table></figure>
+
+<p>在Java中，调用java.util.function.Function变量时需要使用apply方法，这一机制允许对存储的参数执行预先定义的操作。举例来说，在处理add指令中，需要进行如下操作：对25位到21位的二进制进行转换，可以通过<code>m -&gt; Register.regToBin(m.group(2))</code>来实现（其中m表示正则匹配对象，通过m.group(2)获取第二个参数，并对其执行寄存器转二进制的操作）。</p>
+<p>这种机制的优势在于，通过正则表达式可以灵活地获取指令的各个参数。通过调用apply方法，将正则匹配后的参数传递给函数变量，可以轻松实现二进制的转换。这使得指令的处理过程更加灵活、模块化，能够适应不同指令格式的需求。</p>
+<h2 id="Linker-java-链接器的实现"><a href="#Linker-java-链接器的实现" class="headerlink" title="Linker.java 链接器的实现"></a>Linker.java 链接器的实现</h2><p>Minisys 体系使用哈佛结构，指令 MEM 有 64 KB，按字节编址。因此，其地址范围为 0x00000000 ~ 0x0000FFFF。指令 MEM 布局如下：</p>
+<table>
+<thead>
+<tr>
+<th>地址</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0x00000000 ~ 0x00000499</td>
+<td>BIOS 区域。大小为 500 H &#x3D; 1280 D Byte，最多存放 1280 &#x2F; 4 &#x3D; 320 条指令。</td>
+</tr>
+<tr>
+<td>0x00000500 ~ 0x00005499</td>
+<td>用户程序区域。大小为 5000 H &#x3D; 20480 D Byte，最多存放 20480 &#x2F; 4 &#x3D;  5120 条指令。</td>
+</tr>
+<tr>
+<td>0x00005500 ~ 0x0000EFFF</td>
+<td>空。</td>
+</tr>
+<tr>
+<td>0x0000F000 ~ 0x0000F499</td>
+<td>中断处理程序入口。大小为 500 H &#x3D; 1280 D Byte，最多存放 1280 &#x2F; 4 &#x3D; 320 条指令。</td>
+</tr>
+<tr>
+<td>0x0000F500 ~ 0x0000FFFF</td>
+<td>中断处理程序。大小为 B00 H &#x3D; 2816 D Byte，最多存放 2816 &#x2F; 4 &#x3D; 704 条指令<br />。</td>
+</tr>
+</tbody></table>
+<p>通过前述计算，我们能够得知指令的最高限制和位置分布。在链接器中，通过countIns方法计算asm文件中的指令个数。如果计算得到的指令个数超过了最高限制，将触发错误处理。反之，若未超过限制，则通过添加nop（空指令）进行补充，以使指令数量达到相应的地址要求。实现大概如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">// User App 0x00000500 ~ 0x00005499</span><br><span class="hljs-type">int</span> <span class="hljs-variable">userASMInsCount</span> <span class="hljs-operator">=</span> countIns(userASM);<br>assertLength(userASMInsCount, <span class="hljs-number">5120</span>, <span class="hljs-string">&quot;用户程序段过长。&quot;</span>);<br><span class="hljs-type">int</span> <span class="hljs-variable">userNopPadding</span> <span class="hljs-operator">=</span> <span class="hljs-number">5120</span> - userASMInsCount;<br><br>....其他区域代码<br><br><span class="hljs-comment">// User Application</span><br>allProgram.append(<span class="hljs-string">&quot;# ====== User Application START ======\n&quot;</span>);<br>allProgram.append(<span class="hljs-string">&quot;# User Application Length = &quot;</span>).append(userASMInsCount).append(<span class="hljs-string">&quot;\n&quot;</span>);<br>allProgram.append(userASM).append(<span class="hljs-string">&quot;\n&quot;</span>);<br>allProgram.append(<span class="hljs-string">&quot;# User Application Padding = &quot;</span>).append(userNopPadding).append(<span class="hljs-string">&quot;\n&quot;</span>);<br>allProgram.append(<span class="hljs-string">&quot;nop\n&quot;</span>.repeat(userNopPadding));<br>allProgram.append(<span class="hljs-string">&quot;# ====== User Application END ======\n&quot;</span>);<br></code></pre></td></tr></table></figure>
+
+<h2 id="Converter-java：Coe文件的生成"><a href="#Converter-java：Coe文件的生成" class="headerlink" title="Converter.java：Coe文件的生成"></a>Converter.java：Coe文件的生成</h2><p>对于指令段，由textsegToCoe方法生成。该方法中主要实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">for</span> (Instruction ins : textSeg.getIns()) &#123;<br>           <span class="hljs-type">StringBuilder</span> <span class="hljs-variable">buf</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuilder</span>();<br>           <span class="hljs-keyword">for</span> (InstructionComponent comp : ins.getComponents()) &#123;<br>               buf.append(comp.getVal());<br>           &#125;<br>           coe.append(Utils.binToHex(buf.toString(), <span class="hljs-literal">false</span>)).append(<span class="hljs-string">&quot;,\n&quot;</span>);<br>           lineno++;<br>       &#125;<br></code></pre></td></tr></table></figure>
+
+<p>该方法的主要操作就是将之前InstrumentComponent中toBinary方法得到的val进行合并生成二进制表示。</p>
+<h1 id="使用说明"><a href="#使用说明" class="headerlink" title="使用说明"></a>使用说明</h1><ol>
+<li><p>请在jar文件路径下，创建bios的文件，将src\snippet中3个asm文件放进bios中</p>
+<ul>
+<li>如果没有asm文件，无法使用链接，既无法加上 “-l” 参数。</li>
+<li>可以使用自己的bios文件，但需要改成相应的名字。</li>
+<li>src\snippet中3个文件分别用来：bios引导系统程序入口、interpret-entry中断程序的入口、interpret-handler中断程序处理 。</li>
+</ul>
+</li>
+<li><p>jar的项目结构如下：</p>
+</li>
+</ol>
+<figure class="highlight delphi"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs delphi">jar文件路径<br>│  miniasm-java.jar<br>│<br>└─bios<br>        minisys-bios.<span class="hljs-keyword">asm</span><br>        minisys-<span class="hljs-keyword">interrupt</span>-entry.<span class="hljs-keyword">asm</span><br>        minisys-<span class="hljs-keyword">interrupt</span>-handler.<span class="hljs-keyword">asm</span><br></code></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>指令格式如下所示，其中 “-l” 为可选选项，表示是否链接。</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs bash">$ java -jar minisys-java.jar &lt;in_file&gt; &lt;out_dir&gt; -l<br></code></pre></td></tr></table></figure>
+
+<p>&lt;in_file&gt; 表示输入的文件路径，&lt;out_dir&gt;表示输出文件路径，输出的文件如果没创建则会新建。如果输入的文件和jar在同一路径，则可以直接使用<code>$ java -jar minisys-java.jar in.asm out -l</code></p>
+<p><code>in.asm</code>可替换自己的asm文件名字，输出的文件会保持在当前目录的out文件夹里面。也可以直接使用绝对路径。</p>
+<h1 id="测试用例"><a href="#测试用例" class="headerlink" title="测试用例"></a>测试用例</h1><figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm"><span class="hljs-meta">.DATA</span> <span class="hljs-number">0x00001000</span><br><span class="hljs-keyword">buf: </span><span class="hljs-meta">.WORD</span> <span class="hljs-number">0x000000ff</span>,<span class="hljs-number">0x55005500</span><br><span class="hljs-keyword">buf2: </span>.<span class="hljs-keyword">byte </span><span class="hljs-number">1</span><br>      <span class="hljs-meta">.ascii</span> <span class="hljs-string">&quot;hello&quot;</span><br><span class="hljs-meta">.TEXT</span> <span class="hljs-number">0x00003456</span><br><span class="hljs-symbol">start:</span>  <span class="hljs-keyword">addi </span> $<span class="hljs-built_in">t0</span>, $<span class="hljs-built_in">zero</span>, <span class="hljs-number">0</span><br>        <span class="hljs-keyword">lw </span>   $<span class="hljs-built_in">v0</span>, <span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)<br>        <span class="hljs-keyword">addi </span> $<span class="hljs-built_in">t0</span>, $<span class="hljs-built_in">t0</span>, <span class="hljs-number">4</span><br>        <span class="hljs-keyword">lw </span>   $<span class="hljs-built_in">v1</span>, <span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)<br>        <span class="hljs-keyword">add </span>  $<span class="hljs-built_in">v0</span>, $<span class="hljs-built_in">v0</span>, $<span class="hljs-built_in">v1</span><br>        <span class="hljs-keyword">addi </span> $<span class="hljs-built_in">t0</span>, $<span class="hljs-built_in">t0</span>, <span class="hljs-number">4</span><br>        <span class="hljs-keyword">sw </span>   $<span class="hljs-built_in">v0</span>, <span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)<br>        <span class="hljs-keyword">j </span>    start<br>```<br></code></pre></td></tr></table></figure>
+
+<p>输入数据如上，输出的解析结构如下：</p>
+<figure class="highlight mipsasm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs mipsasm"><span class="hljs-symbol">textSeg:</span>&#123;<br><span class="hljs-symbol">	startAddr:</span><span class="hljs-number">13400</span>,	<span class="hljs-keyword">Instruction:&#123;</span><br><span class="hljs-keyword"></span>		<span class="hljs-keyword">addi </span>$<span class="hljs-built_in">t0</span>,$<span class="hljs-built_in">zero</span>,<span class="hljs-number">0</span>	 Hex:<span class="hljs-number">20080000</span><br>		<span class="hljs-keyword">lw </span>$<span class="hljs-built_in">v0</span>,<span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)	 Hex:<span class="hljs-number">8</span>d020014<br>		<span class="hljs-keyword">addi </span>$<span class="hljs-built_in">t0</span>,$<span class="hljs-built_in">t0</span>,<span class="hljs-number">4</span>	 Hex:<span class="hljs-number">21080004</span><br>		<span class="hljs-keyword">lw </span>$<span class="hljs-built_in">v1</span>,<span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)	 Hex:<span class="hljs-number">8</span>d030014<br>		<span class="hljs-keyword">add </span>$<span class="hljs-built_in">v0</span>,$<span class="hljs-built_in">v0</span>,$<span class="hljs-built_in">v1</span>	 Hex:<span class="hljs-number">00431020</span><br>		<span class="hljs-keyword">addi </span>$<span class="hljs-built_in">t0</span>,$<span class="hljs-built_in">t0</span>,<span class="hljs-number">4</span>	 Hex:<span class="hljs-number">21080004</span><br>		<span class="hljs-keyword">sw </span>$<span class="hljs-built_in">v0</span>,<span class="hljs-number">20</span>($<span class="hljs-built_in">t0</span>)	 Hex:ad020014<br>		<span class="hljs-keyword">j </span>start	 Hex:<span class="hljs-number">08000</span>d16<br>	&#125;,<br><span class="hljs-symbol">	Labels:</span>&#123;<br>		start<br>	&#125;<br>&#125;<br><span class="hljs-symbol">dataSeg:</span>&#123;<br><span class="hljs-symbol">	startAddr:</span><span class="hljs-number">0x00001000</span>	,vars:&#123;<br><span class="hljs-symbol">	name:</span><span class="hljs-keyword">buf	</span><span class="hljs-keyword">addr:4096	</span>&#123;<br><span class="hljs-symbol">		type:</span>word	val:<span class="hljs-number">0x000000ff</span><br><span class="hljs-symbol">		type:</span>word	val:<span class="hljs-number">0x55005500</span><br>	&#125;<br><span class="hljs-symbol">	name:</span><span class="hljs-keyword">buf2	</span><span class="hljs-keyword">addr:4104	</span>&#123;<br><span class="hljs-symbol">		type:</span><span class="hljs-keyword">byte	</span>val:<span class="hljs-number">1</span><br><span class="hljs-symbol">		type:</span>ascii	val:hello<br>	&#125;<br>	&#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>可以看到dataSeg里面存储了startAddr数据以及vars，vars中存储了具体的变量type以及val。</p>
+<p>对于textSeg里面也存储了startAddr，对于Instruction也成功转译为二进制。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>用Java实现汇编器+链接器</div>
+      <div>https://edsad122.github.io/blog/2024/01/11/用Java实现汇编器-链接器/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Edasd</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2024年1月11日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2024/01/08/%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0/" title="测试文章">
+                        <span class="hidden-mobile">测试文章</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/blog/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/blog/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
