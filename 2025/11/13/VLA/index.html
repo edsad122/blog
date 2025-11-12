@@ -1,0 +1,714 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/blog/img/fluid.png">
+  <link rel="icon" href="/blog/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="Edasd">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="AI机器人VLA模型论文阅读总结本文档是对 Spec-VLA 和 FAST ($\pi_0$-FAST) 两篇核心论文的阅读、分析与思考总结。这两篇论文分别从“推理速度”和“训练效率&#x2F;高频控制”两个不同维度，对视觉-语言-动作（VLA）模型进行了关键优化。 第一部分：Spec-VLA的阅读与思考（优化推理速度）Spec-VLA: Speculative Decoding for Visi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Edasd">
+<meta property="og:url" content="https://edsad122.github.io/blog/2025/11/13/VLA/index.html">
+<meta property="og:site_name" content="Edasd">
+<meta property="og:description" content="AI机器人VLA模型论文阅读总结本文档是对 Spec-VLA 和 FAST ($\pi_0$-FAST) 两篇核心论文的阅读、分析与思考总结。这两篇论文分别从“推理速度”和“训练效率&#x2F;高频控制”两个不同维度，对视觉-语言-动作（VLA）模型进行了关键优化。 第一部分：Spec-VLA的阅读与思考（优化推理速度）Spec-VLA: Speculative Decoding for Visi">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-11-12T17:12:57.207Z">
+<meta property="article:modified_time" content="2025-11-12T17:12:58.268Z">
+<meta property="article:author" content="Edasd">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Edasd</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/blog/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/blog/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/blog/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"edsad122.github.io","root":"/blog/","version":"1.9.7","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/blog/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/blog/js/utils.js" ></script>
+  <script  src="/blog/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.0.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/blog/">
+      <strong>Edasd</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/blog/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/blog/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text=""></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-11-13 01:12" pubdate>
+          2025年11月13日 凌晨
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          17 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header"></h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="AI机器人VLA模型论文阅读总结"><a href="#AI机器人VLA模型论文阅读总结" class="headerlink" title="AI机器人VLA模型论文阅读总结"></a><strong>AI机器人VLA模型论文阅读总结</strong></h1><p>本文档是对 Spec-VLA 和 FAST ($\pi_0$-FAST) 两篇核心论文的阅读、分析与思考总结。这两篇论文分别从“推理速度”和“训练效率&#x2F;高频控制”两个不同维度，对视觉-语言-动作（VLA）模型进行了关键优化。</p>
+<h2 id="第一部分：Spec-VLA的阅读与思考（优化推理速度）"><a href="#第一部分：Spec-VLA的阅读与思考（优化推理速度）" class="headerlink" title="第一部分：Spec-VLA的阅读与思考（优化推理速度）"></a><strong>第一部分：Spec-VLA的阅读与思考（优化推理速度）</strong></h2><p>Spec-VLA: Speculative Decoding for Vision-Language-Action Models with Relaxed Acceptance</p>
+<h3 id="1-核心问题：VLA模型的推理缓慢"><a href="#1-核心问题：VLA模型的推理缓慢" class="headerlink" title="1. 核心问题：VLA模型的推理缓慢"></a><strong>1. 核心问题：VLA模型的推理缓慢</strong></h3><ul>
+<li><strong>问题所在：</strong> Spec-VLA 论文所基于的VLA模型（如 OpenVLA、RT-2）在推理（即机器人实际“决策”）时<strong>非常缓慢</strong>。  </li>
+<li><strong>根本原因：</strong> 这些模型是**自回归（AR）**的。更糟糕的是，它们的“令牌”（Token）粒度非常细。  </li>
+<li><strong>令牌定义：</strong> 在 OpenVLA 中，<strong>一个令牌不等于一个完整的动作</strong>。一个令牌仅代表一个7维动作向量中的<strong>一个维度</strong>（例如 $\Delta pos_x$）。  </li>
+<li><strong>低效的串行过程：</strong> 为了预测一个时间步的完整动作（7维），模型必须<strong>依次</strong>（串行地）执行7次昂贵的前向传播，严重限制了机器人的实时反应能力：  <ol>
+<li>[输入 图像&#x2F;指令] $\rightarrow$ 输出 $\Delta pos_x$ 令牌  </li>
+<li>[输入 图像&#x2F;指令, $\Delta pos_x$] $\rightarrow$ 输出 $\Delta pos_y$ 令牌  </li>
+<li>…  </li>
+<li>[输入 图像&#x2F;指令, … $\Delta rot_z$] $\rightarrow$ 输出 gripper 令牌</li>
+</ol>
+</li>
+</ul>
+<h3 id="2-解决方案：推测解码（Speculative-Decoding-SD）"><a href="#2-解决方案：推测解码（Speculative-Decoding-SD）" class="headerlink" title="2. 解决方案：推测解码（Speculative Decoding, SD）"></a><strong>2. 解决方案：推测解码（Speculative Decoding, SD）</strong></h3><p>Spec-VLA 的核心思想是<strong>加速</strong>上述的串行解码过程，它是一个<strong>推理时</strong>的优化框架。</p>
+<ul>
+<li><strong>双模型架构：</strong>  <ol>
+<li><strong>验证模型 (</strong>$M_V$<strong>)：</strong> 原始的、昂贵的 OpenVLA-7B 模型。  </li>
+<li><strong>草稿模型 (</strong>$M_D$<strong>)：</strong> 一个小型的、高效的 Llama 解码器层，需要单独训练。</li>
+</ol>
+</li>
+<li><strong>加速流程（老板与助理）：</strong>  <ol>
+<li><strong>草稿（Drafting）：</strong> “助理”（$M_D$）廉价且快速地（串行）“猜测”出接下来 $k$ 个令牌（例如 $\Delta pos_x, \Delta pos_y, \Delta pos_z$）。  </li>
+<li><strong>并行验证（Verification）：</strong> “老板”（$M_V$）利用Transformer的并行计算能力，<strong>一次前向传播</strong>就同时验证这 $k$ 个“草稿”令牌。  </li>
+<li><strong>结果：</strong> 用1次昂贵的并行计算代替了k次昂贵的串行计算，实现了显著的推理加速。</li>
+</ol>
+</li>
+</ul>
+<h3 id="3-关键创新：宽松接受（Relaxed-Acceptance）"><a href="#3-关键创新：宽松接受（Relaxed-Acceptance）" class="headerlink" title="3. 关键创新：宽松接受（Relaxed Acceptance）"></a><strong>3. 关键创新：宽松接受（Relaxed Acceptance）</strong></h3><ul>
+<li><strong>新问题：</strong> 机器人动作预测很难，“助理” $M_D$ 猜的草稿经常“不完全正确”，导致接受率低，加速效果差。  </li>
+<li><strong>传统SD：</strong> 必须完全匹配（$\hat{a}_i =&#x3D; a_i$）才接受。  </li>
+<li><strong>Spec-VLA 的洞察：</strong> 在VLA中，令牌代表的是离散化的物理“箱子”。令牌ID 100 和 101 在物理上是<strong>极其接近</strong>的。  </li>
+<li><strong>宽松接受：</strong> Spec-VLA 允许草稿令牌 $\hat{a}_i$ 与验证令牌 $a_i$ 之间存在一个小的“距离阈值 <em>r</em>”。只要草稿“足够接近”正确答案（例如物理距离在 $r$ 范围内），就被接受。  </li>
+<li><strong>效果：</strong> 接受率大幅提高，在不牺牲任务成功率的前提下，实现了高达<strong>1.42倍</strong>的加速。</li>
+</ul>
+<h3 id="4-进阶技术：动态草稿树（Dynamic-Draft-Tree）"><a href="#4-进阶技术：动态草稿树（Dynamic-Draft-Tree）" class="headerlink" title="4. 进阶技术：动态草稿树（Dynamic Draft Tree）"></a><strong>4. 进阶技术：动态草稿树（Dynamic Draft Tree）</strong></h3><ul>
+<li>为了进一步提高接受率，Spec-VLA 还使用了“动态草稿树”解码。  </li>
+<li>当“助理” $M_D$ 对下一步预测不确定时（例如，40%认为是令牌A，35%认为是令牌B），它<strong>不会只赌一个</strong>。  </li>
+<li>它会同时生成<strong>多个分支</strong>（一个“树”），然后让“老板” $M_V$ 一次性并行验证<strong>所有</strong>的分支，大大增加了“猜对”的概率。</li>
+</ul>
+<h2 id="第二部分：FAST-pi-0-FAST的阅读与思考（优化训练与高频控制）"><a href="#第二部分：FAST-pi-0-FAST的阅读与思考（优化训练与高频控制）" class="headerlink" title="第二部分：FAST &#x2F; $\pi_0$-FAST的阅读与思考（优化训练与高频控制）"></a><strong>第二部分：FAST &#x2F; $\pi_0$-FAST的阅读与思考（优化训练与高频控制）</strong></h2><p>FAST: Efficient Action Tokenization for Vision-Language-Action Models</p>
+<h3 id="1-核心问题：VLA模型的数据高频信息密度低与训练效率低下"><a href="#1-核心问题：VLA模型的数据高频信息密度低与训练效率低下" class="headerlink" title="1. 核心问题：VLA模型的数据高频信息密度低与训练效率低下"></a><strong>1. 核心问题：VLA模型的数据高频信息密度低与训练效率低下</strong></h3><p>FAST 解决的是一个与 Spec-VLA <strong>完全不同</strong>的问题。</p>
+<ol>
+<li><strong>高频控制失灵：</strong> 传统VLA（如 OpenVLA）在处理高频、灵巧的任务（如50Hz折叠T恤）时<strong>完全失败</strong>。  <ul>
+<li><strong>原因：</strong> 在50Hz下，时间 $t$ 和 $t+1$ 的动作几乎完全相同。这导致“下一个令牌”几乎不包含新信息，模型的“学习信号”非常弱，导致训练失败。</li>
+</ul>
+</li>
+<li><strong>训练效率低下：</strong> 当时的SOTA（最先进）模型（如 $\pi_0$-Diffusion）虽然能处理高频任务，但它们是扩散模型，<strong>训练成本极高</strong>（论文中提到 $\pi_0$-FAST 训练速度快5倍）。</li>
+</ol>
+<h3 id="2-解决方案：一种全新的令牌化方案（FAST）"><a href="#2-解决方案：一种全新的令牌化方案（FAST）" class="headerlink" title="2. 解决方案：一种全新的令牌化方案（FAST）"></a><strong>2. 解决方案：一种全新的令牌化方案（FAST）</strong></h3><p>FAST 的核心思想是：<strong>如果“下一个令牌”没有信息量，那就重新定义“令牌”！</strong></p>
+<ul>
+<li><strong>令牌定义（根本不同）：</strong>  <ul>
+<li>OpenVLA 令牌 = 1个时间步的1个维度（例如 $\Delta x$）。  </li>
+<li>FAST 令牌 = <strong>一整段动作块</strong>（例如1秒）的<strong>压缩频率信息</strong>的一部分。</li>
+</ul>
+</li>
+<li><strong>FAST 令牌化器（一个算法，而非NN）：</strong>  <ol>
+<li><strong>获取信号：</strong> 取1秒钟的连续动作数据（一个“Chunk”）。  </li>
+<li><strong>DCT变换 (核心)：</strong> 使用<strong>离散余弦变换</strong>（JPEG图像压缩同款技术）将时域信号转换为<strong>频域</strong>信号。此时，信号的大部分信息被压缩到少数几个<strong>低频系数</strong>上。  </li>
+<li><strong>量化&#x2F;压缩：</strong> 通过缩放和四舍五入，使系数矩阵变得稀疏（大部分为0）。  </li>
+<li><strong>BPE编码 (唯一“训练”部分)：</strong> 使用<strong>字节对编码</strong>（GPT分词器同款技术）对这些稀疏系数进行<strong>无损压缩</strong>。BPE的“训练”目标是<strong>最大化压缩率</strong>，它学习如何用最少的BPE符号来表示这些系数。</li>
+</ol>
+</li>
+<li><strong>$\pi_0$-FAST 模型：</strong>  <ul>
+<li>这是一个标准的<strong>自回归（AR）模型</strong>（骨干是 PaliGemma-3B）。  </li>
+<li>它被训练来预测<strong>下一个 FAST（BPE）令牌</strong>。  </li>
+<li>由于 FAST 令牌代表的是高信息密度的“频率分量”，因此“下一个令牌预测”任务变得有意义且高效。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-总结：FAST的优势"><a href="#3-总结：FAST的优势" class="headerlink" title="3. 总结：FAST的优势"></a><strong>3. 总结：FAST的优势</strong></h3><p>$\pi_0$-FAST 是一个自回归模型，它通过预测 FAST 令牌（即动作块的压缩频率分量），成功解决了高频控制任务，同时达到了与SOTA扩散模型相当的性能，但<strong>训练速度</strong>快了5倍。</p>
+<h2 id="第三部分：关于Transformer的理解与思考"><a href="#第三部分：关于Transformer的理解与思考" class="headerlink" title="第三部分：关于Transformer的理解与思考"></a><strong>第三部分：关于Transformer的理解与思考</strong></h2><p>在研究这两篇论文时，对Transformer的底层工作机制有了更清晰的理解，这对于区分二者的工作原理至关重要。</p>
+<h3 id="1-“令牌”（Token-）与-“嵌入”（Embedding）"><a href="#1-“令牌”（Token-）与-“嵌入”（Embedding）" class="headerlink" title="1. “令牌”（Token**）与**“嵌入”（Embedding）"></a><strong>1. “令牌”（Token**）与**“嵌入”（Embedding）</strong></h3><ul>
+<li><strong>令牌（Token）：</strong> 是一个<strong>整数ID</strong>，来自一个预先确定的“词汇表”。例如，OpenVLA 的 $\Delta pos_x$ 维度有256个“箱子”，令牌就是 0 到 255 之间的整数。$\pi_0$-FAST 的BPE词汇表有1024个符号，令牌就是 0 到 1023 之间的整数。  </li>
+<li><strong>嵌入（Embedding）：</strong> 是一个<strong>高维特征向量</strong>（例如4096维）。它存储在一个巨大的“查询表”（nn.Embedding）中。令牌ID就是这个表的<strong>索引</strong>。</li>
+</ul>
+<h3 id="2-训练目标（Loss）不是“Embedding差”"><a href="#2-训练目标（Loss）不是“Embedding差”" class="headerlink" title="2. 训练目标（Loss）不是“Embedding差”"></a><strong>2. 训练目标（Loss）不是“Embedding差”</strong></h3><ul>
+<li>Transformer的训练目标<strong>不是</strong>预测一个高维Embedding向量然后计算L2距离（这是回归问题）。  </li>
+<li>它的训练目标是<strong>预测下一个令牌ID</strong>（这是一个<strong>分类问题</strong>）。  </li>
+<li><strong>流程：</strong>  <ol>
+<li>Decoder主体输出一个高维“思考总结”向量（例如4096维）。  </li>
+<li>一个最终的线性层（LM Head）将其投影到一个巨大的“Logits”向量上，维度等于<strong>词汇表大小</strong>（例如50,000维）。  </li>
+<li>Logits通过 Softmax 转换为一个<strong>概率分布</strong>（例如，模型认为ID 191 有95%的概率是答案）。  </li>
+<li>**交叉熵损失（Cross-Entropy Loss）**被用来计算这个“概率分布”和“真实令牌ID（191）”之间的差距。</li>
+</ol>
+</li>
+<li>这个Loss的梯度会反向传播，更新<strong>包括Embedding层在内</strong>的所有模型参数。</li>
+</ul>
+<h3 id="3-Transformer的“并行魔法”：因果掩码"><a href="#3-Transformer的“并行魔法”：因果掩码" class="headerlink" title="3. Transformer的“并行魔法”：因果掩码"></a><strong>3. Transformer的“并行魔法”：因果掩码</strong></h3><ul>
+<li><strong>标准AR推理（慢）：</strong> 是一个<strong>串行</strong>循环，必须输入[T1] $\rightarrow$ 得到T2，然后输入[T1, T2] $\rightarrow$ 得到T3。  </li>
+<li><strong>Spec-VLA的并行验证（快）：</strong> 它利用了Transformer在<strong>训练时</strong>的并行机制。  </li>
+<li><strong>工作原理：</strong>  <ol>
+<li>Spec-VLA 将 [\hat{a}_1, \hat{a}_2, \hat{a}_3] <strong>一次性</strong>输入到 OpenVLA 模型中。  </li>
+<li>模型内部的<strong>因果掩码（Causal Mask）</strong>（或称“前瞻掩码”）生效。  </li>
+<li>这个掩码确保了：  <ul>
+<li>在计算<strong>位置1</strong>的输出（$a_1$）时，模型只能看到 &lt;START&gt;。  </li>
+<li>在计算<strong>位置2</strong>的A输出（$a_2$）时，模型只能看到 $\hat{a}_1$。  </li>
+<li>在计算<strong>位置3</strong>的输出（$a_3$）时，模型只能看到 $\hat{a}_1$ 和 $\hat{a}_2$。</li>
+</ul>
+</li>
+<li>因此，模型在<strong>一次前向传播</strong>中，就<strong>并行</strong>地计算出了所有位置的“正确”输出 [a_1, a_2, a_3]，这正是Spec-VLA加速的核心。</li>
+</ol>
+</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div></div>
+      <div>https://edsad122.github.io/blog/2025/11/13/VLA/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>Edasd</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2025年11月13日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/blog/2024/01/11/%E7%94%A8Java%E5%AE%9E%E7%8E%B0%E6%B1%87%E7%BC%96%E5%99%A8-%E9%93%BE%E6%8E%A5%E5%99%A8/" title="用Java实现汇编器+链接器">
+                        <span class="hidden-mobile">用Java实现汇编器+链接器</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/blog/js/events.js" ></script>
+<script  src="/blog/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/blog/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/blog/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/blog/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
